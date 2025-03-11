@@ -1,4 +1,4 @@
-```markdown
+
 # OpenAI Whisper Speech-to-Text Transcription on Low-End Graphics Cards
 
 This repository provides a solution to run the OpenAI Whisper model on GPUs with less than 3GB of VRAM. By leveraging system RAM as shared memory, you can load and transcribe larger audio files—even if your GPU does not meet the recommended VRAM specifications.
@@ -627,4 +627,3 @@ else:
 
 ---
 
-```
