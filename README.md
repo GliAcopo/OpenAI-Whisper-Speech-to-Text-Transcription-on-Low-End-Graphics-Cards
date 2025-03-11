@@ -1,6 +1,45 @@
 ```markdown
+# OpenAI Whisper Speech-to-Text Transcription on Low-End Graphics Cards
+
+This repository provides a solution to run the OpenAI Whisper model on GPUs with less than 3GB of VRAM. By leveraging system RAM as shared memory, you can load and transcribe larger audio files—even if your GPU does not meet the recommended VRAM specifications.
+
+## Overview
+
+When using AI models like Whisper, VRAM (the dedicated memory of your graphics card) is typically used for both the model and the audio data. Although the Whisper model itself can run on low-end hardware by utilizing shared memory (i.e., system RAM), most transcription errors arise not from the model’s size but from the way audio files are handled. In particular, loading large audio files can quickly exceed VRAM limits and cause errors.
+
+## How It Works
+
+- **Shared Memory Usage:**  
+  While the ideal scenario is to use a GPU with high VRAM, one can overcome VRAM constraints by using shared memory. This shared memory is essentially a portion of your system RAM that the GPU can access when its own memory is insufficient. Note that this method may be slower compared to using dedicated VRAM, but it makes running larger models feasible on low-end GPUs.
+
+- **Handling Large Audio Files:**  
+  The primary challenge is the Python library’s handling of audio files. Loading a very large audio file can overwhelm your available VRAM, leading to transcription errors. A simple yet effective solution is to split your audio into smaller segments and transcribe each piece individually. This approach not only avoids memory overload but also improves the reliability of the transcription process.
+
+## Checking Your Shared Memory
+
+Knowing how much shared memory (system RAM) you have is crucial for understanding your system’s capacity to compensate for limited VRAM. Here are some ways to check shared memory on different platforms:
+
+- **Linux:**  
+  Use commands like `free -h` or inspect `/proc/meminfo` to see your total system RAM.  
+  Example:  
+  ```bash
+  free -h
+  ```
+  
+- **Windows:**  
+  Open the Task Manager (Ctrl + Shift + Esc), and check the “Performance” tab for memory details. Alternatively, use the “System Information” tool by typing `msinfo32` in the Run dialog.
+  
+- **macOS:**  
+  Open “Activity Monitor” from the Applications > Utilities folder, and view the “Memory” tab to check your system’s RAM.
+
+## What to expect
+
+By applying these techniques, I successfully ran the most demanding Whisper model—the large version—on a graphics card with just 3GB of VRAM. This repository is a small but effective project aimed at helping others facing similar hardware limitations to transcribe larger audio files without errors.
+
+---
+
 # Configuration Variables 
-The only thing that you'll need to edit in order to interact with the project is the `USER VARIABLES` section. Just be sure to follow the instructions below.
+The only thing that you'll need to edit in order to interact with the project is the `USER VARIABLES` section. In order to edit those just be sure to follow the instructions below.
 Below is the snippet of code that defines the main configuration variables for the project:
 
 ```python
@@ -63,6 +102,181 @@ audio_language = "en"                                                           
 - **audio_language**  
   - **Purpose:** Indicates the language of the audio, ensuring that the Whisper model transcribes the audio correctly (e.g., `"en"` for English).  
   - **Usage:** Passed as a parameter to the `model.transcribe()` function when processing each audio chunk.
+
+# Code breakdown
+This is a teeny tiny micro project. (less than 200 lines long!), it should be fairly easy to edit to your liking. If you are looking to make some touches to the code, then you could find useful this mini-documentation.
+
+---
+## `cut_the_audio_into_chunks` function.
+
+### Summary
+
+- **Input:** An audio file and parameters defining how to split it.
+- **Process:**  
+  - Loads the audio file.  
+  - Computes the total number of chunks based on the desired chunk length.  
+  - Ensures the output directory exists.  
+  - Iterates through the audio, slicing it into chunks and exporting each one.
+- **Output:** Returns a list of file paths for the exported audio chunks.
+
+### Function Signature and Purpose
+
+```python
+def cut_the_audio_into_chunks(audiopath:str, 
+                              chunk_length_ms=10*60*1000, 
+                              audio_chunks_output_dir=os.getcwd(), 
+                              format="m4a", 
+                              chunk_export_format="mp4", 
+                              chunk_export_codec="aac") -> list[str]:
+```
+
+- **Purpose:**  
+  Splits a long audio file into smaller chunks of a specified duration and saves each chunk as a separate file.
+  
+- **Parameters:**  
+  - `audiopath`: The file path to the input audio file.  
+  - `chunk_length_ms`: Duration of each chunk in milliseconds (default is 10 minutes).  
+  - `audio_chunks_output_dir`: Directory where the audio chunks will be saved (default is the current working directory).  
+  - `format`: Format of the input audio file (e.g., `"m4a"`).  
+  - `chunk_export_format`: Format used when exporting each audio chunk (e.g., `"mp4"`).  
+  - `chunk_export_codec`: Codec for encoding the exported audio chunks (e.g., `"aac"`).
+
+- **Return:**  
+  A list of file paths where each file corresponds to an exported audio chunk.
+
+---
+
+### Step-by-Step Code Breakdown
+
+1. **Initial Debug Statements and Import:**
+
+   ```python
+   print("enetered cut_the_audio_into_chunks function")
+   print(f"audio_chunks_output_dir is {audio_chunks_output_dir}")
+   import math
+   ```
+   - **Debugging:** Prints messages to indicate the function has started and shows the output directory.
+   - **Import:** Loads the `math` module (used later to round up the number of chunks).
+
+2. **Loading the Audio File:**
+
+   ```python
+   audio = AudioSegment.from_file(audiopath, format=format)
+   print("audio file loaded")
+   ```
+   - **Action:** Uses `AudioSegment.from_file` (from the pydub library) to load the audio file at `audiopath` with the specified format.
+   - **Note:** This step requires that ffmpeg is installed, as pydub relies on it to handle various audio formats.
+
+3. **Calculating the Number of Chunks:**
+
+   ```python
+   total_length_ms = len(audio)
+   num_chunks = math.ceil(total_length_ms / chunk_length_ms)
+   print(f"Got {num_chunks} audio chuncks across a total lenght of {total_length_ms}\n")
+   ```
+   - **Total Duration:** `total_length_ms` gets the total duration of the audio in milliseconds.
+   - **Chunk Calculation:** Divides the total length by `chunk_length_ms` and rounds up using `math.ceil` to determine how many chunks are needed.
+   - **Debugging:** Prints the number of chunks and total length for transparency.
+
+4. **Ensuring the Output Directory Exists:**
+
+   ```python
+   if not os.path.exists(audio_chunks_output_dir):
+       os.makedirs(audio_chunks_output_dir)
+       print(f"Created new directory {audio_chunks_output_dir}\n")
+   ```
+   - **Check Directory:** Verifies whether `audio_chunks_output_dir` exists.
+   - **Create Directory:** If it does not exist, the directory is created using `os.makedirs`.
+   - **Debugging:** Informs the user if a new directory was created.
+
+5. **Processing and Exporting Each Chunk:**
+
+   ```python
+   list_of_audio_chunks_filenames = []
+   for i in range(num_chunks):
+       print(f"{i}):")
+       
+       out_transcription_filename = os.path.join(audio_chunks_output_dir, f"chunk_{i+1}.{chunk_export_format}")
+       print(f"out_transcription_filename will be {out_transcription_filename}")
+       
+       if os.path.exists(out_transcription_filename):
+           print(f"{out_transcription_filename} already exists. Skipping export...")
+       else:
+           start_ms = i * chunk_length_ms
+           print(f"start_ms = {start_ms}")
+           end_ms = start_ms + chunk_length_ms
+           print(f"end_ms = {end_ms}")
+           
+           chunk = audio[start_ms:end_ms]
+           print("created chunk")
+           
+           chunk.export(out_transcription_filename, format=chunk_export_format, codec=chunk_export_codec)
+           print(f"Exported {out_transcription_filename}\n")
+       
+       list_of_audio_chunks_filenames.append(out_transcription_filename)
+   ```
+   - **Initialization:**  
+     - An empty list `list_of_audio_chunks_filenames` is created to store the file paths of the exported chunks.
+   - **Loop Through Chunks:**  
+     - Iterates from `i = 0` to `num_chunks - 1`.
+     - **Filename Creation:** Constructs the output filename using the output directory and a naming convention (`chunk_{i+1}`) with the desired export format.
+     - **File Existence Check:**  
+       - If the file already exists, it skips the export to avoid redundancy.
+       - If not, the function calculates:
+         - **Start Time:** `start_ms = i * chunk_length_ms`
+         - **End Time:** `end_ms = start_ms + chunk_length_ms`
+       - **Slicing the Audio:**  
+         - Extracts the segment of the audio corresponding to the current chunk using slicing (`audio[start_ms:end_ms]`).
+       - **Exporting the Chunk:**  
+         - Saves the chunk to `out_transcription_filename` using the specified export format and codec.
+     - **Recording:**  
+       - Regardless of whether the chunk was exported or already existed, its filename is appended to the `list_of_audio_chunks_filenames` list.
+
+6. **Return the List of Chunks:**
+
+   ```python
+   return list_of_audio_chunks_filenames
+   ```
+   - **Outcome:** Returns a list containing the file paths for all audio chunks. This list can be used later for transcription or further processing.
+
+---
+## Initial Directories checks
+
+```python
+# ---------------------------------------- Verify if the directories given by the user are valid ----------------------------------------
+if os.path.exists(audiopath):
+    print(f"File found: os.path.exists(audiopath) = {os.path.exists(audiopath)}\n")
+else:
+    print(f"File not found: os.path.exists(audiopath) = {os.path.exists(audiopath)}\n")
+    exit(1)
+if os.path.exists(audio_chunks_output_dir):
+    print(f"Dir found: os.path.exists(audio_chunks_output_dir) = {os.path.exists(audio_chunks_output_dir)}\n")
+else:
+    print(f"Dir not found: os.path.exists(audio_chunks_output_dir) = {os.path.exists(audio_chunks_output_dir)}\n")
+    exit(1)
+if os.path.exists(path_in_which_to_save_transcription_file):
+    print(f"File found: os.path.exists(path_in_which_to_save_transcription_file) = {os.path.exists(path_in_which_to_save_transcription_file)}\n")
+else:
+    print(f"File not found: os.path.exists(path_in_which_to_save_transcription_file) = {os.path.exists(path_in_which_to_save_transcription_file)}\n")
+    exit(1)
+# END------------------------------------- Verify if the directories given by the user are valid -------------------------------------END
+```
+
+This code snippet performs a series of checks to ensure that the necessary file paths and directories exist before the program proceeds. Here's what each part does:
+- **Audio File Check:**  
+  It verifies whether the audio file specified by `audiopath` exists.  
+  - If the file is found, it prints a confirmation message.
+  - If not, it prints an error message and exits the program with an error code (`exit(1)`).
+
+- **Audio Chunks Directory Check:**  
+  It checks if the directory where the audio chunks are to be saved (`audio_chunks_output_dir`) exists.
+  - If the directory is found, a confirmation message is printed.
+  - If not, it prints an error message and stops execution.
+
+- **Transcription File Directory Check:**  
+  Similarly, it validates the existence of the directory where the final transcription file will be stored (`path_in_which_to_save_transcription_file`).
+  - A success message is printed if found.
+  - Otherwise, it prints an error and terminates the program.
 
 
 ```
