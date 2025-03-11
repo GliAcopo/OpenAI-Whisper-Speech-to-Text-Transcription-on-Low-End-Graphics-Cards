@@ -119,17 +119,65 @@ for index, chunk_filename in enumerate(tqdm(list_of_audio_chunks_filenames, tota
     # print(f"Audio {index} out of {total_files} processed.") the use of this print is redundant since we now use tqdm's progress bar.
 # END------------------------------------- Transcribe the chunks -------------------------------------END
 
-# ---------------------------------------- Write the document ----------------------------------------
+# ---------------------------------------- WRITE THE DOCUMENT ----------------------------------------
 joined_result = "\n".join(result_list)
 
+# Define file paths
+filepath = os.path.join(path_in_which_to_save_transcription_file, transcription_filename)
+backup_filepath = os.path.join(path_in_which_to_save_transcription_file, "transcribe_temp.txt")
+
+# Write the file (or backup if it already exists)
 try:
-    with open(os.path.join(path_in_which_to_save_transcription_file, transcription_filename), "x", encoding="utf-8") as f:
+    with open(filepath, "x", encoding="utf-8") as f:
         f.write(joined_result)
+    print(f"file was saved as {filepath}")
 except FileExistsError:
     print(f"ERROR: {transcription_filename} File Already exists.")
     print("Creating backup 'transcribe_temp.txt' file")
-    with open("transcribe_temp.txt", "w", encoding="utf-8") as f:
+    with open(backup_filepath, "w", encoding="utf-8") as f:
         f.write(joined_result)
-# END------------------------------------- Write the document -------------------------------------END
+    print(f"file was saved as {backup_filepath}")
+# END------------------------------------- WRITE THE DOCUMENT -------------------------------------END
+# ---------------------------------------- VERIFY DOCUMENT ----------------------------------------
+# Verification function
+def verify_file(file_path, expected_content):
+    """Return True if the file exists and its content matches the expected content."""
+    if os.path.exists(file_path):
+        with open(file_path, "r", encoding="utf-8") as f:
+            file_content = f.read()
+        return file_content == expected_content
+    return False
+
+# Ask user if they want to verify the document before proceeding
+verify_choice = input("Do you want to verify the document before proceeding? (Y/N): ").strip().lower()
+
+if verify_choice == "y":
+    if verify_file(filepath, joined_result):
+        print(f"{transcription_filename} saved correctly in {path_in_which_to_save_transcription_file}.")
+    elif verify_file(backup_filepath, joined_result):
+        print("Backup file 'transcribe_temp.txt' saved correctly.")
+    else:
+        print("Error: The file was not saved correctly.")
+        # If verification fails, ask the user to choose a fallback option
+        option = input("Would you like to choose another location (C) or print the output in the terminal (P)? (C/P): ").strip().lower()
+        if option == "c":
+            new_folder = input("Please enter the new folder path: ").strip()
+            new_filepath = os.path.join(new_folder, transcription_filename)
+            try:
+                with open(new_filepath, "x", encoding="utf-8") as f:
+                    f.write(joined_result)
+                print(f"Document saved to {new_filepath}.")
+            except Exception as e:
+                print(f"Failed to save file in the new location: {e}")
+        elif option == "p":
+            print("Printing output to terminal:")
+            print(joined_result)
+        else:
+            print("Invalid option. press enter to print output in terminal:")
+            _ = input()
+            print(joined_result)
+else:
+    print("Skipping verification.")
+# END------------------------------------- VERIFY DOCUMENT -------------------------------------END
 
 
