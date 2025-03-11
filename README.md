@@ -278,5 +278,130 @@ This code snippet performs a series of checks to ensure that the necessary file 
   - A success message is printed if found.
   - Otherwise, it prints an error and terminates the program.
 
+## "Transcribe the Chunks" code block
+
+### Summary
+
+- **Initialization:**  
+  The code starts by splitting the audio into chunks and loading the Whisper model.
+- **Processing:**  
+  It iterates over each audio chunk, transcribes them using the model, extracts the text, and saves the result.
+- **Output:**  
+  The transcribed texts are collected in `result_list` and printed to the console for review.
+
+---
+
+### Code Breakdown: Transcribe the Chunks
+
+```python
+# the list of single audio chunks to transcribe
+list_of_audio_chunks_filenames = cut_the_audio_into_chunks(audiopath, chunk_length_ms, audio_chunks_output_dir, format, chunk_export_format, chunk_export_codec)
+```
+
+- **Purpose:**  
+  Calls the `cut_the_audio_into_chunks` function with the provided configuration variables.
+- **What it does:**  
+  - Splits the original audio file into smaller chunks based on the defined `chunk_length_ms`.
+  - Saves these chunks in the specified `audio_chunks_output_dir`.
+  - Returns a list of file paths (`list_of_audio_chunks_filenames`) where each file corresponds to an exported audio chunk.
+
+---
+
+```python
+model = whisper.load_model(model_to_use)
+```
+
+- **Purpose:**  
+  Loads the Whisper model that will be used for transcription.
+- **What it does:**  
+  - Uses `whisper.load_model()` with `model_to_use` (e.g., `"tiny.en"`) to initialize and load the chosen model into memory.
+
+---
+
+```python
+result_list = []
+total_files = len(list_of_audio_chunks_filenames)
+```
+
+- **Purpose:**  
+  Prepares variables for the transcription process.
+- **What it does:**  
+  - Initializes an empty list, `result_list`, to store the transcription text from each audio chunk.
+  - Computes the total number of audio chunks (`total_files`) by getting the length of the `list_of_audio_chunks_filenames` list.
+
+---
+
+```python
+for index, chunk_filename in enumerate(tqdm(list_of_audio_chunks_filenames, total=total_files, desc="Processing files", unit="file"), start=1):
+```
+
+- **Purpose:**  
+  Iterates over each audio chunk for transcription.
+- **What it does:**  
+  - Uses `enumerate` to loop through the list of chunk filenames.
+  - Wraps the iterable with `tqdm` to provide a progress bar, which shows the current progress, total number of files, and a description ("Processing files").
+  - `start=1` makes the count start from 1 for readability.
+
+---
+
+```python
+    result = model.transcribe(chunk_filename, language=audio_language)
+```
+
+- **Purpose:**  
+  Transcribes the audio content of the current chunk.
+- **What it does:**  
+  - Calls the `transcribe` method of the loaded model.
+  - Passes the current chunk's filename (`chunk_filename`) and the `audio_language` (e.g., `"en"`) to ensure the model transcribes in the correct language.
+  - Returns a dictionary (`result`) containing transcription details (e.g., the transcribed text).
+
+---
+
+```python
+    transcription_text = result["text"]
+```
+
+- **Purpose:**  
+  Extracts the actual transcription text from the result.
+- **What it does:**  
+  - Accesses the `"text"` key in the `result` dictionary to retrieve only the transcription text, ignoring any additional metadata.
+
+---
+
+```python
+    result_list.append(transcription_text)  # this part is not necessary if we want the whole dictionary of results and not just the text.
+```
+
+- **Purpose:**  
+  Saves the transcription text for later use.
+- **What it does:**  
+  - Appends the extracted transcription text to the `result_list`.
+  - Note: If full details of the transcription are needed, you could store the entire `result` dictionary instead.
+
+---
+
+```python
+    print(transcription_text)
+```
+
+- **Purpose:**  
+  Provides immediate feedback on the transcription.
+- **What it does:**  
+  - Prints the transcription text for the current chunk to the terminal, which helps in debugging and verifying that the transcription process is working.
+
+---
+
+```python
+    # print(f"Audio {index} out of {total_files} processed.") the use of this print is redundant since we now use tqdm's progress bar.
+```
+
+- **Purpose:**  
+  Indicates a previously used debug print statement.
+- **What it does:**  
+  - This line is commented out because the progress bar from `tqdm` already provides a visual update on the progress, making this print statement unnecessary.
+
+---
+
+
 
 ```
