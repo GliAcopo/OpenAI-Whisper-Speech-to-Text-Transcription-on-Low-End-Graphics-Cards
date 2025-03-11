@@ -40,7 +40,7 @@ By applying these techniques, I successfully ran the most demanding Whisper mode
 
 # Configuration Variables 
 The only thing that you'll need to edit in order to interact with the project is the `USER VARIABLES` section. In order to edit those just be sure to follow the instructions below.
-Below is the snippet of code that defines the main configuration variables for the project:
+This is the snippet of code that defines the main configuration variables for the project:
 
 ```python
 # ---------------------------------------- USER VARIABLES ----------------------------------------
@@ -477,5 +477,154 @@ except FileExistsError:
 
 ---
 
+## document verification section
+
+### Summary
+
+- **Verification Function:**  
+  - Checks for the existence and correctness of a file's content.
+  
+- **User Interaction:**  
+  - Asks whether to verify the saved document.
+  - If chosen, attempts to verify both the primary and backup files.
+  
+- **Fallback Options:**  
+  - If verification fails, the user can either:
+    - Save the document to a new location, or
+    - Print the transcription to the terminal.
+  
+- **Exit:**  
+  - If the user skips verification, the process continues without further checks.
+
+---
+
+### 1. The `verify_file` Function
+
+```python
+def verify_file(file_path, expected_content):
+    """Return True if the file exists and its content matches the expected content."""
+    if os.path.exists(file_path):
+        with open(file_path, "r", encoding="utf-8") as f:
+            file_content = f.read()
+        return file_content == expected_content
+    return False
+```
+
+- **Purpose:**  
+  This function checks whether a file exists and if its content exactly matches the provided `expected_content`.
+
+- **Step-by-Step Explanation:**  
+  - **Check File Existence:**  
+    - Uses `os.path.exists(file_path)` to determine if the file at `file_path` exists.
+  - **Read File Content:**  
+    - If the file exists, it opens the file in read mode with UTF-8 encoding.
+    - The content is read into `file_content`.
+  - **Content Comparison:**  
+    - Compares `file_content` with the `expected_content` provided as an argument.
+    - Returns `True` if they match; otherwise, returns `False`.
+  - **File Not Found:**  
+    - If the file does not exist, the function returns `False`.
+
+---
+
+### 2. Asking the User for Verification
+
+```python
+verify_choice = input("Do you want to verify the document before proceeding? (Y/N): ").strip().lower()
+```
+
+- **Purpose:**  
+  Asks the user whether they want to perform a verification check on the saved document.
+
+- **Step-by-Step Explanation:**  
+  - **User Input:**  
+    - The `input()` function prompts the user.
+  - **Sanitization:**  
+    - `.strip()` removes any leading or trailing whitespace.
+    - `.lower()` converts the response to lowercase for standardized comparison.
+  - **Result:**  
+    - The result is stored in `verify_choice`.
+
+---
+
+### 3. Handling the User's Decision
+
+#### a. If the User Chooses Verification
+
+```python
+if verify_choice == "y":
+    if verify_file(filepath, joined_result):
+        print(f"{transcription_filename} saved correctly in {path_in_which_to_save_transcription_file}.")
+    elif verify_file(backup_filepath, joined_result):
+        print("Backup file 'transcribe_temp.txt' saved correctly.")
+    else:
+        print("Error: The file was not saved correctly.")
+        # If verification fails, ask the user to choose a fallback option
+        option = input("Would you like to choose another location (C) or print the output in the terminal (P)? (C/P): ").strip().lower()
+```
+
+- **Primary Check:**  
+  - The code first checks if the user's response is `"y"`, indicating that they want to verify the document.
+  
+- **Verification Process:**  
+  - **Primary File Verification:**  
+    - Calls `verify_file(filepath, joined_result)` to verify that the file at `filepath` contains the expected transcription (`joined_result`).
+    - If successful, it prints a confirmation message indicating that the file was saved correctly.
+  
+  - **Backup File Verification:**  
+    - If the primary file check fails, it then verifies the backup file (`backup_filepath`).
+    - If the backup is correct, a message confirming the backup's success is printed.
+  
+  - **Failure Case:**  
+    - If neither verification passes, it prints an error message.
+    - Then, it prompts the user to choose a fallback action:
+      - **Choose another location (option "C")** or
+      - **Print the transcription output in the terminal (option "P")**.
+
+#### b. Handling Fallback Options When Verification Fails
+
+```python
+        if option == "c":
+            new_folder = input("Please enter the new folder path: ").strip()
+            new_filepath = os.path.join(new_folder, transcription_filename)
+            try:
+                with open(new_filepath, "x", encoding="utf-8") as f:
+                    f.write(joined_result)
+                print(f"Document saved to {new_filepath}.")
+            except Exception as e:
+                print(f"Failed to save file in the new location: {e}")
+        elif option == "p":
+            print("Printing output to terminal:")
+            print(joined_result)
+        else:
+            print("Invalid option. press enter to print output in terminal:")
+            _ = input()
+            print(joined_result)
+```
+
+- **Option "C" - Choosing a New Location:**  
+  - Prompts the user to enter a new folder path.
+  - Constructs a new file path using `os.path.join(new_folder, transcription_filename)`.
+  - Attempts to create and write the transcription file in the new location:
+    - Uses the mode `"x"` to create a new file, ensuring that an error is thrown if the file already exists.
+  - If an error occurs during file writing, it catches the exception and prints an error message.
+
+- **Option "P" - Printing Output to Terminal:**  
+  - Simply prints the transcription result (`joined_result`) to the terminal.
+
+- **Invalid Option:**  
+  - If the user's input doesn't match either `"c"` or `"p"`, the code informs the user and defaults to printing the output in the terminal after an additional prompt.
+
+#### c. If the User Chooses to Skip Verification
+
+```python
+else:
+    print("Skipping verification.")
+```
+
+- **Purpose:**  
+  - If the user does not choose `"y"` for verification, the code prints a message indicating that the verification step is being skipped.
+
+---
 
 ```
