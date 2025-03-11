@@ -1,0 +1,135 @@
+import whisper
+from pydub import AudioSegment
+import os
+from tqdm import tqdm
+#from pathlib import Path
+# dependencies:
+'''
+$pip instsall tqdm  # for the progress bar
+$pip install        # for the audio processing and segmentation
+
+'''
+# ---------------------------------------- USER VARIABLES ----------------------------------------
+# memo: the "r" before the strings needs to be kept, please do not remove unless you know what you are doing
+model_to_use = "tiny.en"
+audiopath = r"F:\Whisper Model\Test.m4a"   # path of the audio file
+format = "m4a"                                                                                      # format of the audio file
+audio_chunks_output_dir = r"F:\Whisper Model\Testchunks"                                           # the dir in which we save the audio chunks
+chunk_length_ms = 10*60*1000                                                                        # the lenght we want to make the chunks of (ex 10 minutes)
+chunk_export_format = "mp4"                                                                             # the format in wich we will save the chunks
+chunk_export_codec = "aac"                                                                              # the encoding in wich we will save the chunks
+path_in_which_to_save_transcription_file = r"F:\Whisper Model"
+transcription_filename = r"output.txt"                                                                             # transcription_filename of the output transcription
+audio_language = "en"
+# END------------------------------------- USER VARIABLES -------------------------------------END
+
+'''
+Size 	Parameters 	English-only model 	Multilingual model 	Required VRAM 	Relative speed
+tiny 	39 M 	        tiny.en 	        tiny 	            ~1 GB 	        ~10x
+base 	74 M 	        base.en 	        base 	            ~1 GB 	        ~7x
+small 	244 M 	        small.en 	        small 	            ~2 GB 	        ~4x
+medium 	769 M 	        medium.en 	        medium 	            ~5 GB 	        ~2x
+large 	1550 M 	        N/A 	            large 	            ~10 GB 	        1x
+turbo 	809 M 	        N/A 	            turbo 	            ~6 GB 	        ~8x
+'''
+
+def cut_the_audio_into_chunks(audiopath:str, chunk_length_ms=10*60*1000, audio_chunks_output_dir=os.getcwd(), format="m4a", chunk_export_format="mp4", chunk_export_codec="aac")-> list[str]:
+    """
+    @param: audio_chunks_output_dir = the dir in wich to save the audio chunks, it defaults to the dir where the script is currently running.
+    @return: a list of the sigle chunks directories 
+    """
+    print("enetered cut_the_audio_into_chunks function")
+    print(f"audio_chunks_output_dir is {audio_chunks_output_dir}")
+    import math
+    
+    # Load the audio file (pydub uses ffmpeg for handling various formats)
+    audio = AudioSegment.from_file(audiopath, format = format)
+    print("audio file loaded")
+    
+    # Calculate total number of chunks based on audio length
+    total_length_ms = len(audio)
+    num_chunks = math.ceil(total_length_ms / chunk_length_ms)
+    print(f"Got {num_chunks} audio chuncks across a total lenght of {total_length_ms}\n")
+    
+    # Create the output directory if it doesn't exist
+    if not os.path.exists(audio_chunks_output_dir):
+        os.makedirs(audio_chunks_output_dir)
+        print(f"Created new directory {audio_chunks_output_dir}\n")
+    
+    list_of_audio_chunks_filenames = []
+    for i in range(num_chunks):
+        print(f"{i}):")
+        
+        out_transcription_filename = os.path.join(audio_chunks_output_dir, f"chunk_{i+1}.{chunk_export_format}")
+        print(f"out_transcription_filename will be {out_transcription_filename}")
+        
+        # Check if the file already exists, if so skip the export
+        if os.path.exists(out_transcription_filename):
+            print(f"{out_transcription_filename} already exists. Skipping export...")
+        else:
+            start_ms = i * chunk_length_ms
+            print(f"start_ms = {start_ms}")
+            end_ms = start_ms + chunk_length_ms
+            print(f"end_ms = {end_ms}")
+            
+            # Slice the audio for the current chunk
+            chunk = audio[start_ms:end_ms]
+            print("created chunk")
+            
+            # Export the chunk directly to file
+            chunk.export(out_transcription_filename, format=chunk_export_format, codec=chunk_export_codec)
+            print(f"Exported {out_transcription_filename}\n")
+    
+        # Append the transcription_filename to the list either way
+        list_of_audio_chunks_filenames.append(out_transcription_filename)
+    
+    return list_of_audio_chunks_filenames
+
+# ---------------------------------------- Verify if the directories given by the user are valid ----------------------------------------
+if os.path.exists(audiopath):
+    print(f"File found: os.path.exists(audiopath) = {os.path.exists(audiopath)}\n")
+else:
+    print(f"File not found: os.path.exists(audiopath) = {os.path.exists(audiopath)}\n")
+    exit(1)
+if os.path.exists(audio_chunks_output_dir):
+    print(f"Dir found: os.path.exists(audio_chunks_output_dir) = {os.path.exists(audio_chunks_output_dir)}\n")
+else:
+    print(f"Dir not found: os.path.exists(audio_chunks_output_dir) = {os.path.exists(audio_chunks_output_dir)}\n")
+    exit(1)
+if os.path.exists(path_in_which_to_save_transcription_file):
+    print(f"File found: os.path.exists(path_in_which_to_save_transcription_file) = {os.path.exists(path_in_which_to_save_transcription_file)}\n")
+else:
+    print(f"File not found: os.path.exists(path_in_which_to_save_transcription_file) = {os.path.exists(path_in_which_to_save_transcription_file)}\n")
+    exit(1)
+# END------------------------------------- Verify if the directories given by the user are valid -------------------------------------END
+
+# ---------------------------------------- Transcribe the chunks ----------------------------------------
+# the list of single audio chunks to transcribe
+list_of_audio_chunks_filenames = cut_the_audio_into_chunks(audiopath, chunk_length_ms, audio_chunks_output_dir, format, chunk_export_format, chunk_export_codec)
+
+model = whisper.load_model(model_to_use)
+result_list = []
+total_files = len(list_of_audio_chunks_filenames)
+
+for index, chunk_filename in enumerate(tqdm(list_of_audio_chunks_filenames, total=total_files, desc="Processing files", unit="file"), start=1):
+    result = model.transcribe(chunk_filename, language=audio_language)
+    transcription_text = result["text"]
+    result_list.append(transcription_text)                  # this part is not necessary if we want the whole dictionary of results and not just the text.
+    print(transcription_text)
+    # print(f"Audio {index} out of {total_files} processed.") the use of this print is redundant since we now use tqdm's progress bar.
+# END------------------------------------- Transcribe the chunks -------------------------------------END
+
+# ---------------------------------------- Write the document ----------------------------------------
+joined_result = "\n".join(result_list)
+
+try:
+    with open(os.path.join(path_in_which_to_save_transcription_file, transcription_filename), "x", encoding="utf-8") as f:
+        f.write(joined_result)
+except FileExistsError:
+    print(f"ERROR: {transcription_filename} File Already exists.")
+    print("Creating backup 'transcribe_temp.txt' file")
+    with open("transcribe_temp.txt", "w", encoding="utf-8") as f:
+        f.write(joined_result)
+# END------------------------------------- Write the document -------------------------------------END
+
+
