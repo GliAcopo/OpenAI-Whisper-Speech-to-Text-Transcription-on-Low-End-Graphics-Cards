@@ -11,16 +11,16 @@ $pip install        # for the audio processing and segmentation
 '''
 # ---------------------------------------- USER VARIABLES ----------------------------------------
 # memo: the "r" before the strings needs to be kept, please do not remove unless you know what you are doing
-model_to_use = "tiny.en"
-audiopath = r"F:\Whisper Model\Test.m4a"   # path of the audio file
-format = "m4a"                                                                                      # format of the audio file
-audio_chunks_output_dir = r"F:\Whisper Model\Testchunks"                                           # the dir in which we save the audio chunks
-chunk_length_ms = 10*60*1000                                                                        # the lenght we want to make the chunks of (ex 10 minutes)
-chunk_export_format = "mp4"                                                                             # the format in wich we will save the chunks
-chunk_export_codec = "aac"                                                                              # the encoding in wich we will save the chunks
-path_in_which_to_save_transcription_file = r"F:\Whisper Model"
-transcription_filename = r"output.txt"                                                                             # transcription_filename of the output transcription
-audio_language = "en"
+model_to_use = "tiny.en"                                                                        # Specifies which Whisper model variant to load. It is used later when calling whisper.load_model().
+audiopath = r"F:\Whisper Model\Test.m4a"                                                        # The path to the audio file that will be processed.
+format = "m4a"                                                                                  # Indicates the format of the input audio file. This is passed to the audio loading function.
+audio_chunks_output_dir = r"F:\Whisper Model\Testchunks"                                        # Directory where the audio chunks will be saved after splitting.
+chunk_length_ms = 10*60*1000                                                                    # Defines the length (in milliseconds) of each audio chunk; here, it is set to 10 minutes.
+chunk_export_format = "mp4"                                                                     # Determines the file format used when exporting the audio chunks.
+chunk_export_codec = "aac"                                                                      # Sets the codec for exporting the audio chunks.
+path_in_which_to_save_transcription_file = r"F:\Whisper Model"                                  # The directory where the final transcription text file will be saved.
+transcription_filename = r"output.txt"                                                          # The name of the transcription output file.
+audio_language = "en"                                                                           # The language code for the audio, which is passed to the model for proper transcription.
 # END------------------------------------- USER VARIABLES -------------------------------------END
 
 '''
