@@ -36,6 +36,8 @@ Knowing how much shared memory (system RAM) you have is crucial for understandin
 
 By applying these techniques, I successfully ran the most demanding Whisper model—the large version—on a graphics card with just 3GB of VRAM. This repository is a small but effective project aimed at helping others facing similar hardware limitations to transcribe larger audio files without errors.
 
+# Prerequisites
+Of course, you'll need to have the wisper model installed in order to run this program!
 ---
 
 # Configuration Variables 
