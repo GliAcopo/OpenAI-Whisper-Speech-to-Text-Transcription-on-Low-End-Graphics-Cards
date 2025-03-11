@@ -402,6 +402,80 @@ for index, chunk_filename in enumerate(tqdm(list_of_audio_chunks_filenames, tota
 
 ---
 
+## Write the Document code block
+
+### Summary
+
+- **Joining Transcriptions:**  
+  The `joined_result` variable consolidates all transcribed text segments into one string with newline separators.
+- **Defining File Paths:**  
+  Two file paths are established—one for the main output and another as a backup—to ensure no data is lost if the main file exists.
+- **Writing the Document:**  
+  - The code attempts to create the main transcription file.  
+  - If the file already exists, a backup file is generated instead to preserve the output.
+
+---
+
+### Code Breakdown: Write the Document
+
+```python
+joined_result = "\n".join(result_list)
+```
+
+- **Purpose:**  
+  Combines all individual transcriptions into one single string.
+- **What it does:**  
+  - Joins all items from `result_list` (each containing a transcription segment) into a single string.
+  - Inserts a newline (`\n`) between each segment, ensuring that each chunk appears on its own line.
+
+---
+
+```python
+# Define file paths
+filepath = os.path.join(path_in_which_to_save_transcription_file, transcription_filename)
+backup_filepath = os.path.join(path_in_which_to_save_transcription_file, "transcribe_temp.txt")
+```
+
+- **Purpose:**  
+  Sets up the paths where the final transcription document and a backup file will be saved.
+- **What it does:**  
+  - **`filepath`:**  
+    - Combines the directory path (`path_in_which_to_save_transcription_file`) with the desired filename (`transcription_filename`) to create the full file path for the main transcription file.
+  - **`backup_filepath`:**  
+    - Creates an alternative path in the same directory using a fixed backup name (`"transcribe_temp.txt"`).  
+    - This is used in case the main file already exists, to avoid overwriting existing data.
+
+---
+
+```python
+# Write the file (or backup if it already exists)
+try:
+    with open(filepath, "x", encoding="utf-8") as f:
+        f.write(joined_result)
+    print(f"file was saved as {filepath}")
+except FileExistsError:
+    print(f"ERROR: {transcription_filename} File Already exists.")
+    print("Creating backup 'transcribe_temp.txt' file")
+    with open(backup_filepath, "w", encoding="utf-8") as f:
+        f.write(joined_result)
+    print(f"file was saved as {backup_filepath}")
+```
+
+- **Purpose:**  
+  Writes the joined transcription text to a file, using a backup file if the intended file already exists.
+- **What it does:**  
+  - **Try Block:**  
+    - Opens the file at `filepath` in exclusive creation mode (`"x"`).  
+      - This mode creates the file only if it does not already exist; otherwise, it raises a `FileExistsError`.
+    - Writes the combined transcription (`joined_result`) to the file.
+    - Prints a confirmation message showing where the file was saved.
+  - **Except Block (FileExistsError):**  
+    - Catches the `FileExistsError` that occurs if the file already exists.
+    - Prints an error message to alert the user that the file exists.
+    - Creates and writes to a backup file at `backup_filepath` in write mode (`"w"`), which will overwrite any existing backup.
+    - Prints a message confirming that the backup file has been saved.
+
+---
 
 
 ```
