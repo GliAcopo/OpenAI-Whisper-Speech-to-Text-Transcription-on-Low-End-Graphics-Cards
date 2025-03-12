@@ -43,7 +43,8 @@ Of course, you'll need to have the wisper model installed in order to run this p
   - Whisper (of course)
   - pytorch torchvision torchaudio pytorch-cuda -c pytorch -c nvidia
   - ffmpeg
-  - 
+  - pydub
+  - tqdm
  
 If you have any doubts, you can also follow [this guide](https://www.gpu-mart.com/blog/install-whisper-ai-on-windows) which walks you trough using miniconda in order to set up a virtual environment for your project.
 
