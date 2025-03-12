@@ -6,7 +6,7 @@ from tqdm import tqdm
 # dependencies:
 '''
 $pip instsall tqdm  # for the progress bar
-$pip install        # for the audio processing and segmentation
+$pip install  ffmpeg      # for the audio processing and segmentation
 
 '''
 # ---------------------------------------- USER VARIABLES ----------------------------------------
