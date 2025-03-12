@@ -39,6 +39,13 @@ By applying these techniques, I successfully ran the most demanding Whisper mode
 # Prerequisites
 Of course, you'll need to have the wisper model installed in order to run this program!
 ---
+- That would also mean that you'll need a python evironment whit the following packets:
+  - Whisper (of course)
+  - pytorch torchvision torchaudio pytorch-cuda -c pytorch -c nvidia
+  - ffmpeg
+  - 
+ 
+If you have any doubts, you can also follow [this guide](https://www.gpu-mart.com/blog/install-whisper-ai-on-windows) which walks you trough using miniconda in order to set up a virtual environment for your project.
 
 # Configuration Variables 
 The only thing that you'll need to edit in order to interact with the project is the `USER VARIABLES` section. In order to edit those just be sure to follow the instructions below.
